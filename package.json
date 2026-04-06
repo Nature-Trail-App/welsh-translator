@@ -2,7 +2,27 @@
   "name": "@naturetrail/welsh-translator",
   "version": "0.1.0",
   "description": "Framework-agnostic Welsh word translation with mutation normalisation, plus optional Svelte 5 components",
+  "license": "GPL-3.0",
   "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "welsh",
+    "cymraeg",
+    "translation",
+    "mutations",
+    "nlp",
+    "svelte",
+    "language",
+    "linguistics"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nature-Trail-App/welsh-translator.git"
+  },
+  "homepage": "https://github.com/Nature-Trail-App/welsh-translator#readme",
+  "bugs": {
+    "url": "https://github.com/Nature-Trail-App/welsh-translator/issues"
+  },
   "scripts": {
     "dev": "vite dev",
     "demo": "vite",
