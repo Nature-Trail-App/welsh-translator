@@ -119,6 +119,27 @@ The package includes Svelte 5 components for rapid UI development. These compone
 </style>
 ```
 
+### Usage with HTML Content
+
+If your content contains HTML formatting (e.g. from a CMS rich text field), use `TranslatableHTML` instead. It preserves the HTML structure while making Welsh words interactive.
+
+```svelte
+<script lang="ts">
+  import { LookupEngine } from '@naturetrail/welsh-translator/core';
+  import { TranslatableHTML } from '@naturetrail/welsh-translator/svelte';
+
+  let { vocabulary } = $props();
+
+  const engine = LookupEngine.fromEntries(vocabulary);
+  const html = '<p>Mae <strong>carreg</strong> yn y <em>bwthyn</em>.</p>';
+</script>
+
+<TranslatableHTML {html} {engine} />
+```
+
+> [!NOTE]
+> `TranslatableHTML` uses Svelte's `{@html}` internally. You are responsible for sanitising the HTML input if it comes from an untrusted source.
+
 ---
 
 ## 📱 React Native / Framework Agnostic Example
@@ -174,6 +195,7 @@ Without a normaliser, a simple dictionary lookup for `garreg` would fail. This l
 You can find complete, runnable examples in the [examples/](./examples) directory:
 
 - **[Svelte 5 Example](./examples/svelte)**: Uses the `<TranslatableText />` component with Svelte 5 runes and `bits-ui`.
+- **[Svelte 5 HTML Example](./examples/svelte-html)**: Uses the `<TranslatableHTML />` component with rich HTML content (bold, italic, paragraphs).
 - **[Vanilla TS Example](./examples/vanilla)**: Demonstrates manual usage of the `core` library and `LookupEngine`.
 
 Both examples use real vocabulary and prose data extracted from the initial Nant Gwrtheyrn project.

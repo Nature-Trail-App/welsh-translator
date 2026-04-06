@@ -26,7 +26,7 @@
   "scripts": {
     "dev": "vite dev",
     "demo": "vite",
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "svelte-package -i src -o dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "svelte-check --tsconfig ./tsconfig.json"
@@ -51,8 +51,8 @@
     "dist"
   ],
   "peerDependencies": {
-    "svelte": ">=5.0.0",
-    "bits-ui": ">=2.0.0"
+    "bits-ui": ">=2.0.0",
+    "svelte": ">=5.0.0"
   },
   "peerDependenciesMeta": {
     "svelte": {
@@ -63,12 +63,13 @@
     }
   },
   "devDependencies": {
-    "svelte": "^5.0.0",
-    "bits-ui": "^2.15.0",
+    "@sveltejs/package": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0",
+    "bits-ui": "^2.15.0",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
     "typescript": "^5.7.0",
-    "svelte-check": "^4.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
   }
 }
