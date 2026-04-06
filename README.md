@@ -178,6 +178,19 @@ You can find complete, runnable examples in the [examples/](./examples) director
 
 Both examples use real vocabulary and prose data extracted from the initial Nant Gwrtheyrn project.
 
+### Running the Demos
+
+You can launch an interactive demo gallery to test these examples locally:
+
+```bash
+# 1. Start the Vite dev server
+npm run demo
+
+# 2. Open the URL provided in your terminal (usually http://localhost:5173)
+```
+
+The gallery will allow you to switch between the Svelte 5 and Vanilla TypeScript implementations.
+
 ---
 
 ## 🛠️ Payload CMS Integration
