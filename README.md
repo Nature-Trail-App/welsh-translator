@@ -169,6 +169,17 @@ Without a normaliser, a simple dictionary lookup for `garreg` would fail. This l
 
 ---
 
+## 📖 Examples
+
+You can find complete, runnable examples in the [examples/](./examples) directory:
+
+- **[Svelte 5 Example](./examples/svelte)**: Uses the `<TranslatableText />` component with Svelte 5 runes and `bits-ui`.
+- **[Vanilla TS Example](./examples/vanilla)**: Demonstrates manual usage of the `core` library and `LookupEngine`.
+
+Both examples use real vocabulary and prose data extracted from the initial Nant Gwrtheyrn project.
+
+---
+
 ## 🛠️ Payload CMS Integration
 
 This package is designed to consume data from a Payload CMS collection structured like this:

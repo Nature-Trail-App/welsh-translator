@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="cy">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vanilla TS Example — Welsh Translator</title>
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --slate: #1a1f2e;
+      --cream: #e8e0d0;
+    }
+    body {
+      background: var(--slate);
+      color: var(--cream);
+      font-family: Georgia, serif;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    .poi-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2rem;
+      border-radius: 8px;
+    }
+    .word {
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .word[data-translatable="true"] {
+      border-bottom-color: var(--gold);
+    }
+    .word:hover {
+      background: rgba(201, 168, 76, 0.1);
+    }
+    #translation-box {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #2c2f3a;
+      border: 1px solid var(--gold);
+      border-radius: 4px;
+      display: none;
+    }
+    .radical {
+      font-size: 0.8rem;
+      color: #8a9bb0;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="poi-container">
+    <h1 id="poi-name"></h1>
+    <div id="poi-body"></div>
+
+    <div id="translation-box">
+      <strong id="tt-word"></strong>
+      <div id="tt-radical" class="radical"></div>
+      <p id="tt-english"></p>
+    </div>
+  </div>
+
+  <!-- In a real app, this would be a bundled JS file -->
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

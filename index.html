@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@naturetrail/welsh-translator — Demo Gallery</title>
+    <style>
+        :root {
+            --gold: #c9a84c;
+            --slate: #1a1f2e;
+            --cream: #e8e0d0;
+            --parchment: #f2ead8;
+        }
+        body {
+            background-color: var(--slate);
+            color: var(--cream);
+            font-family: 'Cinzel', Georgia, serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            text-align: center;
+        }
+        h1 {
+            color: var(--gold);
+            margin-bottom: 2rem;
+            letter-spacing: 0.1em;
+        }
+        .gallery {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            max-width: 800px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            padding: 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            flex: 1;
+            min-width: 280px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: var(--gold);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: var(--parchment);
+        }
+        .card p {
+            font-family: Georgia, serif;
+            font-style: italic;
+            color: #8a9bb0;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--gold);
+            color: var(--slate);
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welsh Translator Demos</h1>
+    <div class="gallery">
+        <a href="/examples/svelte/index.html" class="card">
+            <span class="badge">Svelte 5</span>
+            <h2>Svelte Demo</h2>
+            <p>Using the provided library components with Svelte 5 runes and bits-ui.</p>
+        </a>
+        <a href="/examples/vanilla/index.html" class="card">
+            <span class="badge">Vanilla TS</span>
+            <h2>Vanilla Demo</h2>
+            <p>Manual integration with the core engine and tokenizer using standard DOM manipulation.</p>
+        </a>
+    </div>
+</body>
+</html>
