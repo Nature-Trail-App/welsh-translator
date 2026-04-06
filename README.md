@@ -214,6 +214,47 @@ For a deep dive into the linguistic research, initial design decisions, and Wels
 
 ---
 
+## 🚢 Deployment & Versioning
+
+This package is published to NPM automatically via GitHub Actions when a version tag is pushed.
+
+### Releasing a new version
+
+1. **Bump the version** using npm's built-in command. This updates `package.json` and creates a git tag in one step:
+
+   ```bash
+   npm version patch   # 0.1.0 → 0.1.1  (bug fixes)
+   npm version minor   # 0.1.0 → 0.2.0  (new features, backwards compatible)
+   npm version major   # 0.1.0 → 1.0.0  (breaking changes)
+   ```
+
+2. **Push the commit and tag:**
+
+   ```bash
+   git push && git push --tags
+   ```
+
+3. **GitHub Actions takes over** — the [publish workflow](./.github/workflows/publish.yml) runs type checking, tests, and build before publishing to NPM. You can monitor the run in the **Actions** tab of the repository.
+
+### Versioning guidelines
+
+This package follows [Semantic Versioning](https://semver.org/):
+
+| Change type | Version bump | Examples |
+|---|---|---|
+| Bug fix, internal refactor | `patch` | Fix incorrect mutation candidate, fix tokeniser edge case |
+| New feature, new export | `minor` | New component, new engine method, new mutation type |
+| Breaking API change | `major` | Rename/remove exports, change `LookupResult` shape |
+
+> [!NOTE]
+> The package is currently at `v0.x.x`, meaning the API may still evolve. Pin to an exact version in production apps until `v1.0.0` is released.
+
+### CI
+
+Every push and pull request to `main` runs the [CI workflow](./.github/workflows/ci.yml): type checking, tests, and a full build. A passing CI badge indicates the package builds and all 60 tests pass.
+
+---
+
 ## 🤝 Contributing & License
 
 This project is part of the **Nant Gwrtheyrn** initiative. 
