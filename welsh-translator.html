@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="cy">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nant Gwrtheyrn — Welsh Word Translator PoC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --slate:   #1a1f2e;
+      --stone:   #2c2f3a;
+      --mist:    #8a9bb0;
+      --cream:   #e8e0d0;
+      --parchment: #f2ead8;
+      --gold:    #c9a84c;
+      --gold-pale: #e8d4a0;
+      --sea:     #4a7fa0;
+      --moss:    #5a7a5a;
+      --accent:  #c9a84c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--slate);
+      color: var(--cream);
+      font-family: 'Libre Baskerville', Georgia, serif;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(74,127,160,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(90,122,90,0.08) 0%, transparent 60%);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(201,168,76,0.3);
+    }
+
+    .site-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 600;
+      color: var(--parchment);
+      letter-spacing: 0.05em;
+      line-height: 1.3;
+    }
+
+    h1 span {
+      display: block;
+      font-size: 0.65em;
+      font-weight: 400;
+      color: var(--mist);
+      letter-spacing: 0.1em;
+      margin-top: 0.3rem;
+    }
+
+    .instruction {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--mist);
+      margin-bottom: 2rem;
+      font-style: italic;
+      letter-spacing: 0.02em;
+    }
+
+    .poi-card {
+      background: var(--stone);
+      border: 1px solid rgba(201,168,76,0.15);
+      border-radius: 4px;
+      padding: 2rem;
+      max-width: 680px;
+      margin: 0 auto 2rem;
+      position: relative;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+    }
+
+    .poi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.6;
+    }
+
+    .poi-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      color: var(--gold-pale);
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.08em;
+    }
+
+    .poi-type {
+      font-size: 0.7rem;
+      color: var(--mist);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+    }
+
+    .poi-body {
+      font-size: 0.95rem;
+      line-height: 1.85;
+      color: var(--cream);
+    }
+
+    /* Tappable word */
+    .w {
+      cursor: pointer;
+      border-bottom: 1px solid rgba(201,168,76,0.0);
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      border-radius: 2px;
+      padding: 0 1px;
+      position: relative;
+    }
+
+    .w[data-has-translation="true"] {
+      border-bottom-color: rgba(201,168,76,0.45);
+      color: var(--gold-pale);
+    }
+
+    .w[data-has-translation="true"]:hover,
+    .w[data-has-translation="true"]:focus {
+      background: rgba(201,168,76,0.12);
+      border-bottom-color: var(--gold);
+      outline: none;
+    }
+
+    .w[data-has-translation="true"].active {
+      background: rgba(201,168,76,0.18);
+      border-bottom-color: var(--gold);
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.18s, transform 0.18s;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tooltip-inner {
+      background: var(--slate);
+      border: 1px solid rgba(201,168,76,0.5);
+      border-radius: 4px;
+      padding: 0.55rem 0.85rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      white-space: nowrap;
+      max-width: 240px;
+      white-space: normal;
+    }
+
+    .tooltip-welsh {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.2rem;
+    }
+
+    .tooltip-radical {
+      font-size: 0.65rem;
+      color: var(--mist);
+      font-style: italic;
+      margin-bottom: 0.3rem;
+    }
+
+    .tooltip-english {
+      font-size: 0.88rem;
+      color: var(--parchment);
+      font-weight: 700;
+    }
+
+    .tooltip-note {
+      font-size: 0.7rem;
+      color: var(--mist);
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    .tooltip-arrow {
+      width: 10px;
+      height: 6px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .tooltip-arrow::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid rgba(201,168,76,0.5);
+    }
+
+    /* Legend */
+    .legend {
+      max-width: 680px;
+      margin: 0 auto 2rem;
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.72rem;
+      color: var(--mist);
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.06);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 2px;
+      background: rgba(201,168,76,0.45);
+      border-radius: 1px;
+    }
+
+    /* Debug panel */
+    .debug-panel {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 1.2rem;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: var(--mist);
+    }
+
+    .debug-panel h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--moss);
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    .debug-log {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .debug-entry {
+      padding: 0.25rem 0.5rem;
+      background: rgba(255,255,255,0.03);
+      border-left: 2px solid transparent;
+      border-radius: 2px;
+    }
+
+    .debug-entry.hit  { border-color: var(--moss); color: #8fbc8f; }
+    .debug-entry.miss { border-color: var(--sea);  color: var(--mist); }
+    .debug-entry.mutated { border-color: var(--gold); color: var(--gold-pale); }
+
+    .no-log {
+      color: rgba(255,255,255,0.2);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="site-label">Proof of Concept</div>
+  <h1>
+    Nant Gwrtheyrn
+    <span>Tap any underlined word to translate · Cliciwch ar unrhyw air i gyfieithu</span>
+  </h1>
+</header>
+
+<div class="instruction">
+  Words with a golden underline are in the dictionary. Tap them to see their English translation.
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot"></div>
+    <span>Word found in vocabulary</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background: rgba(74,127,160,0.6)"></div>
+    <span>Radical recovered via mutation normaliser</span>
+  </div>
+</div>
+
+<div id="poi-container"></div>
+
+<div class="debug-panel">
+  <h3>Normaliser Log — lookup trace</h3>
+  <div class="debug-log" id="debug-log">
+    <div class="no-log">Tap a word to see the lookup trace…</div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-inner">
+    <div class="tooltip-welsh"  id="tt-welsh"></div>
+    <div class="tooltip-radical" id="tt-radical" style="display:none"></div>
+    <div class="tooltip-english" id="tt-english"></div>
+    <div class="tooltip-note"   id="tt-note" style="display:none"></div>
+  </div>
+  <div class="tooltip-arrow"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// DATA — mirrors the Payload CMS collection structure
+// ─────────────────────────────────────────────────────────────
+
+/** Vocabulary collection — one entry per site */
+const vocabulary = [
+  // id, welsh (radical form), english, site, optional note
+  { id: "v01", welsh: "nant",     english: "stream / valley",    site: "nant-gwrtheyrn", note: "Also used in place names" },
+  { id: "v02", welsh: "môr",      english: "sea",                site: "nant-gwrtheyrn" },
+  { id: "v03", welsh: "mynydd",   english: "mountain",           site: "nant-gwrtheyrn" },
+  { id: "v04", welsh: "llwybr",   english: "path / trail",       site: "nant-gwrtheyrn" },
+  { id: "v05", welsh: "maen",     english: "stone",              site: "nant-gwrtheyrn", note: "Plural: meini" },
+  { id: "v06", welsh: "coed",     english: "trees / woodland",   site: "nant-gwrtheyrn" },
+  { id: "v07", welsh: "carreg",   english: "rock / stone",       site: "nant-gwrtheyrn" },
+  { id: "v08", welsh: "pysgodyn", english: "fish",               site: "nant-gwrtheyrn" },
+  { id: "v09", welsh: "gorsaf",   english: "station",            site: "nant-gwrtheyrn" },
+  { id: "v10", welsh: "tad",      english: "father",             site: "nant-gwrtheyrn" },
+  { id: "v11", welsh: "pen",      english: "head / headland",    site: "nant-gwrtheyrn", note: "Common in place names" },
+  { id: "v12", welsh: "bwthyn",   english: "cottage",            site: "nant-gwrtheyrn" },
+  { id: "v13", welsh: "capel",    english: "chapel",             site: "nant-gwrtheyrn" },
+  { id: "v14", welsh: "traeth",   english: "beach",              site: "nant-gwrtheyrn" },
+  { id: "v15", welsh: "cwm",      english: "valley / combe",     site: "nant-gwrtheyrn" },
+  { id: "v16", welsh: "golau",    english: "light",              site: "nant-gwrtheyrn" },
+  { id: "v17", welsh: "dŵr",      english: "water",              site: "nant-gwrtheyrn" },
+  { id: "v18", welsh: "pentref",  english: "village",            site: "nant-gwrtheyrn" },
+  { id: "v19", welsh: "porthladd",english: "harbour / port",     site: "nant-gwrtheyrn" },
+  { id: "v20", welsh: "iaith",    english: "language",           site: "nant-gwrtheyrn" },
+];
+
+/** POI collection — points of interest */
+const pois = [
+  {
+    id: "poi01",
+    name: "Porthladd yr Iaith",
+    nameEnglish: "Harbour of the Language",
+    type: "Heritage Site",
+    site: "nant-gwrtheyrn",
+    // Welsh prose with some naturally mutated words embedded
+    body: `Ar lan y môr, mae bwthyn bach yn sefyll uwchlaw'r traeth. 
+Adeiladwyd y pentref hwn gan chwarelwyr y mynydd, ac mae'r llwybr 
+arfordirol yn dilyn ymyl y graig. Gwelir carreg fawr wrth ymyl y 
+capel, a elwir yn Faen y Gorffennol. Mae'r nant yn llifo i lawr 
+o'r cwm, heibio i'r coed trwchus, gan gario dŵr oer o'r bryniau. 
+Unwaith roedd gorsaf fechan yma, a hen dad y pentref a'i hadeiladodd. 
+Dyma ganolfan yr iaith Gymraeg ar Benrhyn Llŷn.`,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────
+// MUTATION NORMALISER
+// Returns an array of candidate radical forms to try in order.
+// ─────────────────────────────────────────────────────────────
+
+function getCandidates(word) {
+  const w = word.toLowerCase().replace(/[^a-zàáâãäåæçèéêëìíîïðñòóôõöùúûüýÿŵŷŵŷỳ·]/gi, '');
+  const candidates = [w]; // always try the word as-is first
+  const log = [];
+
+  // ── Aspirate mutation reversals (most distinctive, check first)
+  // ch → c,  ph → p,  th → t
+  if (w.startsWith('ch')) {
+    candidates.push('c' + w.slice(2));
+    log.push({ type: 'aspirate', from: 'ch', to: 'c' });
+  }
+  if (w.startsWith('ph')) {
+    candidates.push('p' + w.slice(2));
+    log.push({ type: 'aspirate', from: 'ph', to: 'p' });
+  }
+  if (w.startsWith('th')) {
+    candidates.push('t' + w.slice(2));
+    log.push({ type: 'aspirate', from: 'th', to: 't' });
+  }
+
+  // ── Nasal mutation reversals
+  // ngh → c (e.g. nghar → car),  nh → t (e.g. nhad → tad),  mh → p
+  // ng  → g (e.g. ngardd → gardd),  n → d,  m → b
+  if (w.startsWith('ngh')) {
+    candidates.push('c' + w.slice(3));
+    log.push({ type: 'nasal', from: 'ngh', to: 'c' });
+  } else if (w.startsWith('nh')) {
+    candidates.push('t' + w.slice(2));
+    log.push({ type: 'nasal', from: 'nh', to: 't' });
+  } else if (w.startsWith('mh')) {
+    candidates.push('p' + w.slice(2));
+    log.push({ type: 'nasal', from: 'mh', to: 'p' });
+  } else if (w.startsWith('ng')) {
+    candidates.push('g' + w.slice(2));
+    log.push({ type: 'nasal', from: 'ng', to: 'g' });
+  }
+
+  // ── Soft mutation reversals
+  // b → p,  d → t,  g → c,  f → b or m,  dd → d,  l → ll,  r → rh
+  // special: if word starts with vowel, try prepending g (g was deleted)
+  if (w.startsWith('dd')) {
+    candidates.push('d' + w.slice(2));
+    log.push({ type: 'soft', from: 'dd', to: 'd' });
+  }
+  if (w.startsWith('ff')) {
+    // ff can be an original ff (not a mutation), but soft mutation doesn't produce ff
+    // so we skip
+  }
+  if (!w.startsWith('dd') && !w.startsWith('th') && !w.startsWith('ch') && !w.startsWith('ph')) {
+    if (w.startsWith('b')) {
+      candidates.push('p' + w.slice(1));
+      log.push({ type: 'soft', from: 'b', to: 'p' });
+    }
+    if (w.startsWith('d')) {
+      candidates.push('t' + w.slice(1));
+      log.push({ type: 'soft', from: 'd', to: 't' });
+    }
+    if (w.startsWith('g') && w.length > 2) {
+      candidates.push('c' + w.slice(1));
+      log.push({ type: 'soft', from: 'g', to: 'c' });
+    }
+    if (w.startsWith('f')) {
+      candidates.push('b' + w.slice(1));
+      candidates.push('m' + w.slice(1));
+      log.push({ type: 'soft', from: 'f', to: 'b or m' });
+    }
+    if (w.startsWith('l') && !w.startsWith('ll')) {
+      candidates.push('ll' + w.slice(1));
+      log.push({ type: 'soft', from: 'l', to: 'll' });
+    }
+    if (w.startsWith('r') && !w.startsWith('rh')) {
+      candidates.push('rh' + w.slice(1));
+      log.push({ type: 'soft', from: 'r', to: 'rh' });
+    }
+  }
+
+  // ── Soft mutation: g deletion (word starts with vowel — try prepending g)
+  if (/^[aeiouàáâèéêìíîòóôùúû]/i.test(w)) {
+    candidates.push('g' + w);
+    log.push({ type: 'soft-g-deletion', from: '(vowel)', to: 'g' + w });
+  }
+
+  // Deduplicate
+  const seen = new Set();
+  const unique = candidates.filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
+
+  return { candidates: unique, mutationLog: log };
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOOKUP
+// ─────────────────────────────────────────────────────────────
+
+// Build a fast lowercase index from the vocabulary
+const vocabIndex = {};
+vocabulary.forEach(entry => {
+  vocabIndex[entry.welsh.toLowerCase()] = entry;
+});
+
+function lookupWord(rawWord) {
+  const clean = rawWord.replace(/[^a-zàáâãäåæçèéêëìíîïðñòóôõöùúûüýÿŵŷỳ·']/gi, '').toLowerCase();
+  const { candidates, mutationLog } = getCandidates(clean);
+
+  const debugLines = [];
+
+  for (const candidate of candidates) {
+    const entry = vocabIndex[candidate];
+    const isMutated = candidate !== clean;
+    if (entry) {
+      debugLines.push({
+        type: isMutated ? 'mutated' : 'hit',
+        msg: isMutated
+          ? `"${rawWord}" → normalised to "${candidate}" (${mutationLog.map(l=>l.type).join(', ')}) → MATCH`
+          : `"${rawWord}" → direct match`
+      });
+      return { entry, radical: isMutated ? candidate : null, debugLines };
+    } else {
+      debugLines.push({
+        type: 'miss',
+        msg: `"${candidate}" — not in vocabulary`
+      });
+    }
+  }
+
+  return { entry: null, radical: null, debugLines };
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────
+
+function tokenise(text) {
+  // Split on whitespace and punctuation but keep punctuation attached to words
+  return text.split(/(\s+)/);
+}
+
+function renderPOI(poi) {
+  const card = document.createElement('div');
+  card.className = 'poi-card';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'poi-name';
+  nameEl.textContent = poi.name;
+
+  const nameEngEl = document.createElement('div');
+  nameEngEl.className = 'poi-type';
+  nameEngEl.textContent = poi.nameEnglish + ' · ' + poi.type;
+
+  const bodyEl = document.createElement('div');
+  bodyEl.className = 'poi-body';
+
+  // Tokenise and wrap words
+  const tokens = tokenise(poi.body);
+  tokens.forEach(token => {
+    if (/^\s+$/.test(token) || token === '') {
+      bodyEl.appendChild(document.createTextNode(token));
+      return;
+    }
+
+    // Strip leading/trailing punctuation for lookup but preserve in display
+    const match = token.match(/^([^a-zA-ZÀ-ÿŵŷỳ]*)([a-zA-ZÀ-ÿŵŷỳ'·-]+)([^a-zA-ZÀ-ÿŵŷỳ]*)$/);
+    if (!match) {
+      bodyEl.appendChild(document.createTextNode(token));
+      return;
+    }
+
+    const [, pre, word, post] = match;
+    const { entry } = lookupWord(word);
+
+    if (pre) bodyEl.appendChild(document.createTextNode(pre));
+
+    const span = document.createElement('span');
+    span.className = 'w';
+    span.textContent = word;
+    span.setAttribute('tabindex', '0');
+    span.setAttribute('data-word', word);
+    span.setAttribute('data-has-translation', entry ? 'true' : 'false');
+    bodyEl.appendChild(span);
+
+    if (post) bodyEl.appendChild(document.createTextNode(post));
+  });
+
+  card.appendChild(nameEl);
+  card.appendChild(nameEngEl);
+  card.appendChild(bodyEl);
+  return card;
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOOLTIP
+// ─────────────────────────────────────────────────────────────
+
+const tooltip   = document.getElementById('tooltip');
+const ttWelsh   = document.getElementById('tt-welsh');
+const ttRadical = document.getElementById('tt-radical');
+const ttEnglish = document.getElementById('tt-english');
+const ttNote    = document.getElementById('tt-note');
+const debugLog  = document.getElementById('debug-log');
+
+let activeSpan = null;
+
+function showTooltip(span) {
+  const word = span.getAttribute('data-word');
+  const { entry, radical, debugLines } = lookupWord(word);
+  if (!entry) return;
+
+  // Update tooltip content
+  ttWelsh.textContent = word;
+
+  if (radical) {
+    ttRadical.textContent = `radical: ${radical}`;
+    ttRadical.style.display = 'block';
+  } else {
+    ttRadical.style.display = 'none';
+  }
+
+  ttEnglish.textContent = entry.english;
+
+  if (entry.note) {
+    ttNote.textContent = entry.note;
+    ttNote.style.display = 'block';
+  } else {
+    ttNote.style.display = 'none';
+  }
+
+  // Position tooltip above the word
+  const rect = span.getBoundingClientRect();
+  const tRect = tooltip.getBoundingClientRect();
+  const gap = 10;
+
+  tooltip.style.left = Math.max(8, rect.left + rect.width / 2 - 120) + 'px';
+  tooltip.style.top  = (rect.top + window.scrollY - (tRect.height || 80) - gap) + 'px';
+  tooltip.classList.add('visible');
+
+  // Update debug log
+  debugLog.innerHTML = '';
+  debugLines.forEach(line => {
+    const el = document.createElement('div');
+    el.className = `debug-entry ${line.type}`;
+    el.textContent = line.msg;
+    debugLog.appendChild(el);
+  });
+
+  // Mark active
+  if (activeSpan) activeSpan.classList.remove('active');
+  activeSpan = span;
+  span.classList.add('active');
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+  if (activeSpan) activeSpan.classList.remove('active');
+  activeSpan = null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────────────────────
+
+const container = document.getElementById('poi-container');
+pois.forEach(poi => container.appendChild(renderPOI(poi)));
+
+container.addEventListener('click', e => {
+  const span = e.target.closest('.w[data-has-translation="true"]');
+  if (!span) { hideTooltip(); return; }
+  if (span === activeSpan) { hideTooltip(); return; }
+  showTooltip(span);
+});
+
+container.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const span = e.target.closest('.w[data-has-translation="true"]');
+  if (span) { e.preventDefault(); showTooltip(span); }
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.w') && !e.target.closest('#tooltip')) {
+    hideTooltip();
+  }
+});
+</script>
+</body>
+</html>
