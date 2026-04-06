@@ -64,7 +64,7 @@
     return false;
   }
 
-  function makeTranslatable(container: HTMLElement) {
+  function makeTranslatable(container: HTMLElement, _html: string) {
     function process() {
       const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
       const textNodes: Text[] = [];
