@@ -1,0 +1,91 @@
+/*
+ * Welsh Translator — default theme.
+ * Override any --wt-* variable on a parent element or :root.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Popover panel                                                       */
+/* ------------------------------------------------------------------ */
+
+.translation-popover {
+  background: var(--wt-popover-bg, #2c2f3a);
+  border: var(--wt-popover-border, 1px solid rgba(201, 168, 76, 0.3));
+  border-radius: var(--wt-popover-border-radius, 8px);
+  padding: var(--wt-popover-padding, 0.75rem 1rem);
+  min-width: var(--wt-popover-min-width, 160px);
+  max-width: var(--wt-popover-max-width, 280px);
+  box-shadow: var(--wt-popover-shadow, 0 8px 24px rgba(0, 0, 0, 0.4));
+  z-index: var(--wt-popover-z-index, 1000);
+}
+
+.translation-popover__arrow {
+  fill: var(--wt-popover-arrow-fill, #2c2f3a);
+  stroke: var(--wt-popover-arrow-stroke, rgba(201, 168, 76, 0.3));
+  stroke-width: 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Popover content                                                     */
+/* ------------------------------------------------------------------ */
+
+.translation-popover__welsh {
+  font-weight: var(--wt-welsh-font-weight, 700);
+  font-size: var(--wt-welsh-font-size, 1.1rem);
+  color: var(--wt-welsh-color, #e8d4a0);
+  margin: 0 0 0.25rem;
+}
+
+.translation-popover__radical {
+  font-size: var(--wt-radical-font-size, 0.75rem);
+  color: var(--wt-radical-color, #8a9bb0);
+  font-style: italic;
+  margin: 0 0 0.5rem;
+}
+
+.translation-popover__english {
+  font-size: var(--wt-english-font-size, 1rem);
+  color: var(--wt-english-color, #e8e0d0);
+  margin: 0;
+}
+
+.translation-popover__note {
+  font-size: var(--wt-note-font-size, 0.8rem);
+  color: var(--wt-note-color, #8a9bb0);
+  font-style: italic;
+  margin: 0.4rem 0 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--wt-note-border-color, rgba(138, 155, 176, 0.2));
+}
+
+/* ------------------------------------------------------------------ */
+/* Imperative word buttons (TranslatableHTML creates these via DOM)    */
+/* ------------------------------------------------------------------ */
+
+.translatable-html .translatable-word {
+  all: unset;
+  cursor: pointer;
+  border-bottom: 1px solid var(--wt-word-border-color, rgba(201, 168, 76, 0.45));
+  transition: var(--wt-word-transition, border-color 0.15s, background-color 0.15s);
+  border-radius: var(--wt-word-border-radius, 2px);
+  padding: var(--wt-word-padding, 0 1px);
+  line-height: inherit;
+  font: inherit;
+  color: inherit;
+}
+
+.translatable-html .translatable-word:hover,
+.translatable-html .translatable-word:focus-visible {
+  background: var(--wt-word-hover-bg, rgba(201, 168, 76, 0.12));
+  border-bottom-color: var(--wt-word-hover-border-color, rgba(201, 168, 76, 1));
+  outline: var(--wt-word-focus-outline, 2px solid rgba(201, 168, 76, 0.4));
+  outline-offset: 1px;
+}
+
+.translatable-html .translatable-word--active {
+  background: var(--wt-word-active-bg, rgba(201, 168, 76, 0.18));
+  border-bottom-color: var(--wt-word-active-border-color, rgba(201, 168, 76, 1));
+}
+
+.translatable-html .word {
+  padding: var(--wt-word-padding, 0 1px);
+}
