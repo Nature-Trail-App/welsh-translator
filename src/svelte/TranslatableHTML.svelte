@@ -3,6 +3,7 @@
   import type { LookupResult } from '../core/types.js';
   import { tokenise } from '../core/tokeniser.js';
   import { LookupEngine } from '../core/lookup-engine.js';
+  import './welsh-translator.css';
 
   interface Props {
     /** The HTML string to render with translatable Welsh words. */
@@ -207,82 +208,6 @@
 <style>
   .translatable-html {
     display: inline;
-    line-height: 1.8;
-  }
-
-  /* Button styles must be :global() because buttons are created imperatively */
-  :global(.translatable-html .translatable-word) {
-    all: unset;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(201, 168, 76, 0.45);
-    transition: border-color 0.15s, background-color 0.15s;
-    border-radius: 2px;
-    padding: 0 1px;
-    line-height: inherit;
-    font: inherit;
-    color: inherit;
-  }
-
-  :global(.translatable-html .translatable-word:hover),
-  :global(.translatable-html .translatable-word:focus-visible) {
-    background: rgba(201, 168, 76, 0.12);
-    border-bottom-color: rgba(201, 168, 76, 1);
-    outline: 2px solid rgba(201, 168, 76, 0.4);
-    outline-offset: 1px;
-  }
-
-  :global(.translatable-html .translatable-word--active) {
-    background: rgba(201, 168, 76, 0.18);
-    border-bottom-color: rgba(201, 168, 76, 1);
-  }
-
-  :global(.translatable-html .word) {
-    padding: 0 1px;
-  }
-
-  :global(.translation-popover) {
-    background: #2c2f3a;
-    border: 1px solid rgba(201, 168, 76, 0.3);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    min-width: 160px;
-    max-width: 280px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: 1000;
-  }
-
-  :global(.translation-popover__arrow) {
-    fill: #2c2f3a;
-    stroke: rgba(201, 168, 76, 0.3);
-    stroke-width: 1px;
-  }
-
-  :global(.translation-popover__welsh) {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: #e8d4a0;
-    margin: 0 0 0.25rem;
-  }
-
-  :global(.translation-popover__radical) {
-    font-size: 0.75rem;
-    color: #8a9bb0;
-    font-style: italic;
-    margin: 0 0 0.5rem;
-  }
-
-  :global(.translation-popover__english) {
-    font-size: 1rem;
-    color: #e8e0d0;
-    margin: 0;
-  }
-
-  :global(.translation-popover__note) {
-    font-size: 0.8rem;
-    color: #8a9bb0;
-    font-style: italic;
-    margin: 0.4rem 0 0;
-    padding-top: 0.4rem;
-    border-top: 1px solid rgba(138, 155, 176, 0.2);
+    line-height: var(--wt-line-height, 1.8);
   }
 </style>

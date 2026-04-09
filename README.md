@@ -109,13 +109,7 @@ The package includes Svelte 5 components for rapid UI development. These compone
 </div>
 
 <style>
-  /* Optional: Custom styling for the popover content */
-  :global(.translation-popover) {
-    background: #2c2f3a;
-    color: white;
-    border-radius: 8px;
-    padding: 0.75rem;
-  }
+  /* See the Styling & Customisation section below for all available CSS variables */
 </style>
 ```
 
@@ -179,6 +173,132 @@ When `enabled` is `false`, both components render as plain `<span>` elements —
 
 ---
 
+## 🎨 Styling & Customisation
+
+All visual properties are exposed as **CSS custom properties** (variables) with sensible defaults. The default gold-on-dark theme works out of the box — override any `--wt-*` variable to customise the appearance.
+
+### Quick Example
+
+Set variables on a parent element or `:root` to override the defaults:
+
+```svelte
+<div style="--wt-popover-bg: #1a1a2e; --wt-welsh-color: #ffd700;">
+  <TranslatableText text={welshText} {engine} />
+</div>
+```
+
+### CSS Variable Reference
+
+#### Word / Button Styling
+
+These variables control the interactive word buttons rendered inline in the text.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--wt-word-border-color` | `rgba(201, 168, 76, 0.45)` | Underline colour for translatable words |
+| `--wt-word-hover-bg` | `rgba(201, 168, 76, 0.12)` | Background on hover |
+| `--wt-word-hover-border-color` | `rgba(201, 168, 76, 1)` | Underline colour on hover |
+| `--wt-word-focus-outline` | `2px solid rgba(201, 168, 76, 0.4)` | Outline on hover / keyboard focus |
+| `--wt-word-active-bg` | `rgba(201, 168, 76, 0.18)` | Background when popover is open |
+| `--wt-word-active-border-color` | `rgba(201, 168, 76, 1)` | Underline colour when popover is open |
+| `--wt-word-border-radius` | `2px` | Border radius of word buttons |
+| `--wt-word-padding` | `0 1px` | Padding around word buttons |
+| `--wt-word-transition` | `border-color 0.15s, background-color 0.15s` | Transition for hover/active states |
+
+#### Popover Panel
+
+These variables control the translation popover container.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--wt-popover-bg` | `#2c2f3a` | Popover background colour |
+| `--wt-popover-border` | `1px solid rgba(201, 168, 76, 0.3)` | Popover border |
+| `--wt-popover-border-radius` | `8px` | Popover corner radius |
+| `--wt-popover-padding` | `0.75rem 1rem` | Popover inner padding |
+| `--wt-popover-min-width` | `160px` | Minimum popover width |
+| `--wt-popover-max-width` | `280px` | Maximum popover width |
+| `--wt-popover-shadow` | `0 8px 24px rgba(0, 0, 0, 0.4)` | Popover box shadow |
+| `--wt-popover-z-index` | `1000` | Popover stacking order |
+| `--wt-popover-arrow-fill` | `#2c2f3a` | Arrow fill colour |
+| `--wt-popover-arrow-stroke` | `rgba(201, 168, 76, 0.3)` | Arrow border colour |
+
+#### Popover Content
+
+These variables control the text inside the popover.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--wt-welsh-color` | `#e8d4a0` | Welsh word heading colour |
+| `--wt-welsh-font-size` | `1.1rem` | Welsh word heading font size |
+| `--wt-welsh-font-weight` | `700` | Welsh word heading font weight |
+| `--wt-english-color` | `#e8e0d0` | English translation colour |
+| `--wt-english-font-size` | `1rem` | English translation font size |
+| `--wt-radical-color` | `#8a9bb0` | Radical form text colour |
+| `--wt-radical-font-size` | `0.75rem` | Radical form font size |
+| `--wt-note-color` | `#8a9bb0` | Note text colour |
+| `--wt-note-font-size` | `0.8rem` | Note font size |
+| `--wt-note-border-color` | `rgba(138, 155, 176, 0.2)` | Note separator line colour |
+
+#### Container
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--wt-line-height` | `1.8` | Line height for `TranslatableText` / `TranslatableHTML` containers |
+
+### Class-Based Overrides
+
+All components accept a `class` prop for additional customisation:
+
+```svelte
+<TranslatableText text={welshText} {engine} class="my-custom-class" />
+<TranslatableHTML html={htmlContent} {engine} class="my-custom-class" />
+```
+
+For deeper overrides, you can target the component CSS classes directly using `:global()`:
+
+```svelte
+<style>
+  :global(.translation-popover) {
+    font-family: 'Georgia', serif;
+  }
+</style>
+```
+
+### Theme Example: Light Mode
+
+Here is a complete light theme override you can apply to `:root` or a parent element:
+
+```css
+:root {
+  --wt-popover-bg: #ffffff;
+  --wt-popover-border: 1px solid #e0e0e0;
+  --wt-popover-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --wt-popover-arrow-fill: #ffffff;
+  --wt-popover-arrow-stroke: #e0e0e0;
+  --wt-welsh-color: #2c5f2d;
+  --wt-english-color: #333333;
+  --wt-radical-color: #666666;
+  --wt-note-color: #666666;
+  --wt-note-border-color: rgba(0, 0, 0, 0.1);
+  --wt-word-border-color: rgba(44, 95, 45, 0.4);
+  --wt-word-hover-bg: rgba(44, 95, 45, 0.08);
+  --wt-word-hover-border-color: rgba(44, 95, 45, 1);
+  --wt-word-active-bg: rgba(44, 95, 45, 0.15);
+  --wt-word-active-border-color: rgba(44, 95, 45, 1);
+  --wt-word-focus-outline: 2px solid rgba(44, 95, 45, 0.3);
+}
+```
+
+### Importing Styles Separately
+
+The default styles are bundled with the Svelte components automatically. If you need to import the stylesheet separately (e.g. for SSR or a custom setup):
+
+```js
+import '@naturetrail/welsh-translator/styles';
+```
+
+---
+
 ## 📱 React Native / Framework Agnostic Example
 
 For React Native, you can use the core logic to build your own interactive word component.
@@ -234,6 +354,7 @@ You can find complete, runnable examples in the [examples/](./examples) director
 - **[Svelte 5 Example](./examples/svelte)**: Uses the `<TranslatableText />` component with Svelte 5 runes and `bits-ui`.
 - **[Svelte 5 HTML Example](./examples/svelte-html)**: Uses the `<TranslatableHTML />` component with rich HTML content (bold, italic, paragraphs).
 - **[Svelte 5 Toggle Example](./examples/svelte-toggle)**: Demonstrates toggling translation on/off at runtime with both `TranslatableText` and `TranslatableHTML`.
+- **[Custom Theme Example](./examples/custom-theme)**: Demonstrates overriding `--wt-*` CSS variables to create light, dark, and forest colour themes.
 - **[Vanilla TS Example](./examples/vanilla)**: Demonstrates manual usage of the `core` library and `LookupEngine`.
 
 Both examples use real vocabulary and prose data extracted from the initial Nant Gwrtheyrn project.
