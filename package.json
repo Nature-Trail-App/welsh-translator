@@ -41,6 +41,9 @@
       "svelte": "./dist/svelte/index.js",
       "import": "./dist/svelte/index.js"
     },
+    "./styles": {
+      "import": "./dist/svelte/welsh-translator.css"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "svelte": "./dist/index.js",
