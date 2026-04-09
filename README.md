@@ -134,6 +134,43 @@ If your content contains HTML formatting (e.g. from a CMS rich text field), use 
 > [!NOTE]
 > `TranslatableHTML` uses Svelte's `{@html}` internally. You are responsible for sanitising the HTML input if it comes from an untrusted source.
 
+### Toggling Translation On/Off
+
+Both components accept an `enabled` prop. When `false`, the component renders the raw text or HTML with zero overhead — no tokenisation, no DOM walking, no popover setup.
+
+The `enabled` prop defaults to `engine.enabled`, so you can control all components at once via the engine, or override per-component.
+
+**Via the engine (framework-agnostic):**
+
+```typescript
+// Disable globally — any component reading engine.enabled will skip processing
+engine.enabled = false;
+
+// Re-enable
+engine.enabled = true;
+```
+
+**Via the component prop (Svelte reactive toggle):**
+
+```svelte
+<script lang="ts">
+  import { LookupEngine } from '@naturetrail/welsh-translator/core';
+  import { TranslatableText, TranslatableHTML } from '@naturetrail/welsh-translator/svelte';
+
+  const engine = LookupEngine.fromEntries(vocabulary);
+  let translationEnabled = $state(true);
+</script>
+
+<button onclick={() => (translationEnabled = !translationEnabled)}>
+  Toggle Translation
+</button>
+
+<TranslatableText text={welshText} {engine} enabled={translationEnabled} />
+<TranslatableHTML html={welshHtml} {engine} enabled={translationEnabled} />
+```
+
+When `enabled` is `false`, both components render as plain `<span>` elements — identical output to rendering the text or HTML directly.
+
 ---
 
 ## 🎨 Styling & Customisation
@@ -316,6 +353,7 @@ You can find complete, runnable examples in the [examples/](./examples) director
 
 - **[Svelte 5 Example](./examples/svelte)**: Uses the `<TranslatableText />` component with Svelte 5 runes and `bits-ui`.
 - **[Svelte 5 HTML Example](./examples/svelte-html)**: Uses the `<TranslatableHTML />` component with rich HTML content (bold, italic, paragraphs).
+- **[Svelte 5 Toggle Example](./examples/svelte-toggle)**: Demonstrates toggling translation on/off at runtime with both `TranslatableText` and `TranslatableHTML`.
 - **[Custom Theme Example](./examples/custom-theme)**: Demonstrates overriding `--wt-*` CSS variables to create light, dark, and forest colour themes.
 - **[Vanilla TS Example](./examples/vanilla)**: Demonstrates manual usage of the `core` library and `LookupEngine`.
 

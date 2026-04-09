@@ -19,6 +19,13 @@ const CLEAN_PATTERN = /[^a-zàáâãäåæçèéêëìíîïðñòóôõöùúû
 export class LookupEngine {
   private index: Map<string, VocabularyEntry>;
 
+  /**
+   * When false, all lookups return empty results and hasTranslation returns false.
+   * Useful as a framework-agnostic kill switch — set to false to disable translation
+   * without changing any component props.
+   */
+  enabled: boolean = true;
+
   private constructor(vocabulary: VocabularyEntry[]) {
     this.index = new Map();
     for (const entry of vocabulary) {
@@ -58,6 +65,7 @@ export class LookupEngine {
    * @returns A LookupResult with the matched entry (or null), the recovered radical, and a debug trace.
    */
   lookup(rawWord: string): LookupResult {
+    if (!this.enabled) return { entry: null, radical: null, debugLines: [] };
     const clean = rawWord.replace(CLEAN_PATTERN, '').toLowerCase();
     if (clean === '') {
       return { entry: null, radical: null, debugLines: [] };
@@ -94,6 +102,7 @@ export class LookupEngine {
    * Useful at render time to mark translatable words without building a full debug trace.
    */
   hasTranslation(rawWord: string): boolean {
+    if (!this.enabled) return false;
     const clean = rawWord.replace(CLEAN_PATTERN, '').toLowerCase();
     if (clean === '') return false;
 

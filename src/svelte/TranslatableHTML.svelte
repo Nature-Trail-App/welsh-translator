@@ -10,11 +10,22 @@
     html: string;
     /** A loaded LookupEngine instance for vocabulary lookups. */
     engine: LookupEngine;
+    /**
+     * Whether translation is enabled. Defaults to `engine.enabled`.
+     * When false, renders the HTML as-is with no DOM walking or popover overhead.
+     */
+    enabled?: boolean;
     /** Optional CSS class for the container. */
     class?: string;
   }
 
-  let { html, engine, class: className = '' }: Props = $props();
+  let { html, engine, enabled: enabledProp = undefined, class: className = '' }: Props = $props();
+  let isEnabled = $derived(enabledProp ?? engine.enabled);
+
+  // Close any open popover when translation is disabled
+  $effect(() => {
+    if (!isEnabled) closePopover();
+  });
 
   // Shared popover state
   let popoverOpen = $state(false);
@@ -139,56 +150,60 @@
   }
 </script>
 
-<span
-  class="translatable-html {className}"
-  lang="cy"
-  use:makeTranslatable={html}
->
-  {@html html}
-</span>
+{#if isEnabled}
+  <span
+    class="translatable-html {className}"
+    lang="cy"
+    use:makeTranslatable={html}
+  >
+    {@html html}
+  </span>
 
-<!-- Single shared popover, anchored to whichever word was tapped -->
-<Popover.Root bind:open={popoverOpen} onOpenChange={(o) => { if (!o) closePopover(); }}>
-  {#if anchorEl}
-    <Popover.Content
-      class="translation-popover"
-      side="top"
-      sideOffset={8}
-      avoidCollisions={true}
-      trapFocus={false}
-      preventScroll={false}
-      customAnchor={anchorEl}
-      onEscapeKeydown={() => closePopover()}
-      onInteractOutside={() => closePopover()}
-    >
-      {#if lookupResult?.entry}
-        <div role="status" aria-live="polite">
-          <p class="translation-popover__welsh" lang="cy">
-            {activeWord}
-          </p>
-
-          {#if lookupResult.radical}
-            <p class="translation-popover__radical" lang="cy">
-              radical: {lookupResult.radical}
+  <!-- Single shared popover, anchored to whichever word was tapped -->
+  <Popover.Root bind:open={popoverOpen} onOpenChange={(o) => { if (!o) closePopover(); }}>
+    {#if anchorEl}
+      <Popover.Content
+        class="translation-popover"
+        side="top"
+        sideOffset={8}
+        avoidCollisions={true}
+        trapFocus={false}
+        preventScroll={false}
+        customAnchor={anchorEl}
+        onEscapeKeydown={() => closePopover()}
+        onInteractOutside={() => closePopover()}
+      >
+        {#if lookupResult?.entry}
+          <div role="status" aria-live="polite">
+            <p class="translation-popover__welsh" lang="cy">
+              {activeWord}
             </p>
-          {/if}
 
-          <p class="translation-popover__english" lang="en">
-            {lookupResult.entry.english}
-          </p>
+            {#if lookupResult.radical}
+              <p class="translation-popover__radical" lang="cy">
+                radical: {lookupResult.radical}
+              </p>
+            {/if}
 
-          {#if lookupResult.entry.note}
-            <p class="translation-popover__note">
-              {lookupResult.entry.note}
+            <p class="translation-popover__english" lang="en">
+              {lookupResult.entry.english}
             </p>
-          {/if}
-        </div>
-      {/if}
 
-      <Popover.Arrow class="translation-popover__arrow" />
-    </Popover.Content>
-  {/if}
-</Popover.Root>
+            {#if lookupResult.entry.note}
+              <p class="translation-popover__note">
+                {lookupResult.entry.note}
+              </p>
+            {/if}
+          </div>
+        {/if}
+
+        <Popover.Arrow class="translation-popover__arrow" />
+      </Popover.Content>
+    {/if}
+  </Popover.Root>
+{:else}
+  <span class="translatable-html {className}" lang="cy">{@html html}</span>
+{/if}
 
 <style>
   .translatable-html {
