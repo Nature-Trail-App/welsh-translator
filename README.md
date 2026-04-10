@@ -9,6 +9,7 @@ Designed for the **Nant Gwrtheyrn heritage trail app**, this package enables tap
 ## 🌟 Key Features
 
 - **Initial Mutation Normalisation**: Recovers the radical (root) form of mutated Welsh words (Soft, Nasal, and Aspirate mutations).
+- **Multi-Word Phrase Lookup**: Supports curated multi-word vocabulary entries (e.g. "taith cerdded" → "a walk") with per-word mutation reversal.
 - **Offline-First**: Designed to work with local vocabulary data (e.g., synced via Zero-Sync or Payload CMS).
 - **Framework Agnostic**: Core TypeScript logic can be used in React, React Native, Vue, or vanilla JS.
 - **Svelte 5 Components**: Ready-to-use components for interactive text, built with Svelte 5 runes and `bits-ui` popovers.
@@ -84,6 +85,36 @@ tokens.forEach(token => {
   }
 });
 ```
+
+### 3. Multi-Word Phrase Lookup
+
+Vocabulary entries can contain multi-word phrases by using space-separated radical forms in the `welsh` field. The engine handles mutation reversal independently on each word.
+
+```typescript
+import { LookupEngine, tokenise } from '@naturetrail/welsh-translator/core';
+
+const vocabulary = [
+  { id: '1', welsh: 'taith cerdded', english: 'a walk', site: 'nant-gwrtheyrn' },
+  { id: '2', welsh: 'rydych chi', english: 'you are', site: 'nant-gwrtheyrn' },
+  { id: '3', welsh: 'bwthyn', english: 'cottage', site: 'nant-gwrtheyrn' },
+];
+
+const engine = LookupEngine.fromEntries(vocabulary);
+const tokens = tokenise('Rydych chi daith gerdded');
+
+// Check for a phrase starting at a token index
+const phrase = engine.hasPhrase(tokens, 0);
+console.log(phrase.match);     // true — "rydych chi" matched
+console.log(phrase.tokenSpan); // 3 — covers tokens [rydych, whitespace, chi]
+
+// Full phrase lookup with debug trace
+const result = engine.lookupPhrase(tokens, 0);
+console.log(result.entry?.english); // "you are"
+console.log(result.wordCount);      // 2
+```
+
+> [!NOTE]
+> The Svelte components (`TranslatableText` and `TranslatableHTML`) detect and render phrases automatically — no extra configuration needed. Phrase words are grouped into a single interactive button.
 
 ---
 
@@ -311,21 +342,56 @@ import { LookupEngine, tokenise } from '@naturetrail/welsh-translator/core';
 const WelshText = ({ text, engine }) => {
   const tokens = React.useMemo(() => tokenise(text), [text]);
 
+  // Build items with phrase-awareness
+  const items = React.useMemo(() => {
+    const result = [];
+    let i = 0;
+    while (i < tokens.length) {
+      const token = tokens[i];
+      if (token.type === 'word') {
+        // Check for phrase match first
+        const phrase = engine.hasPhrase(tokens, i);
+        if (phrase.match) {
+          const phraseTokens = tokens.slice(i, i + phrase.tokenSpan);
+          const phraseText = phraseTokens.map(t => t.type === 'word' ? t.word : t.raw).join('');
+          result.push({ key: i, type: 'phrase', text: phraseText, startIndex: i });
+          i += phrase.tokenSpan;
+          continue;
+        }
+        // Single word
+        const entry = engine.lookup(token.word).entry;
+        result.push({ key: i, type: 'word', text: token.word, entry });
+      } else {
+        result.push({ key: i, type: 'raw', text: token.raw });
+      }
+      i++;
+    }
+    return result;
+  }, [tokens, engine]);
+
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-      {tokens.map((token, i) => {
-        if (token.type === 'word') {
-          const entry = engine.lookup(token.word).entry;
-          
+      {items.map(item => {
+        if (item.type === 'phrase') {
           return (
-            <TouchableOpacity key={i} onPress={() => entry && alert(entry.english)}>
-              <Text style={{ textDecorationLine: entry ? 'underline' : 'none' }}>
-                {token.word}
+            <TouchableOpacity key={item.key} onPress={() => {
+              const result = engine.lookupPhrase(tokens, item.startIndex);
+              if (result.entry) alert(result.entry.english);
+            }}>
+              <Text style={{ textDecorationLine: 'underline' }}>{item.text}</Text>
+            </TouchableOpacity>
+          );
+        }
+        if (item.type === 'word') {
+          return (
+            <TouchableOpacity key={item.key} onPress={() => item.entry && alert(item.entry.english)}>
+              <Text style={{ textDecorationLine: item.entry ? 'underline' : 'none' }}>
+                {item.text}
               </Text>
             </TouchableOpacity>
           );
         }
-        return <Text key={i}>{token.raw}</Text>;
+        return <Text key={item.key}>{item.text}</Text>;
       })}
     </View>
   );
@@ -432,7 +498,7 @@ This package follows [Semantic Versioning](https://semver.org/):
 
 ### CI
 
-Every push and pull request to `main` runs the [CI workflow](./.github/workflows/ci.yml): type checking, tests, and a full build. A passing CI badge indicates the package builds and all 60 tests pass.
+Every push and pull request to `main` runs the [CI workflow](./.github/workflows/ci.yml): type checking, tests, and a full build. A passing CI badge indicates the package builds and all 80 tests pass.
 
 ---
 

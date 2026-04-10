@@ -21,6 +21,8 @@ We chose single-word translation as the pragmatic starting point for several lin
 2.  **Linguistic Complexity**: Features like preposition fusion (prepositions merging with pronouns) and adjectives following nouns make phrase-level translation unreliable without an active API.
 3.  **Mobile UX**: Tapping a single word is a more natural interaction on a mobile device than dragging selection handles across phrases.
 
+> **Update:** The library now also supports **curated multi-word phrase entries** (e.g. "taith cerdded" → "a walk"). Phrase entries use the same `VocabularyEntry` format with space-separated radicals in the `welsh` field. The engine applies mutation reversal independently per word and uses greedy longest-match. This does not attempt general-purpose phrase translation — entries are hand-curated by vocabulary authors, keeping the approach offline-first and NLP-free.
+
 ### Why a Local Dictionary?
 The app is **offline-first**. Vocabulary data is synced to the device as part of the initial content load. 
 - **Reliability**: No network is required at lookup time.
