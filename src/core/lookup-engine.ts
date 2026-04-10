@@ -1,4 +1,4 @@
-import type { VocabularyEntry, LookupResult, DebugLine } from './types.js';
+import type { VocabularyEntry, LookupResult, PhraseLookupResult, DebugLine, Token } from './types.js';
 import type { VocabularyProvider } from './adapters/types.js';
 import { getCandidates } from './mutations.js';
 
@@ -18,6 +18,7 @@ const CLEAN_PATTERN = /[^a-zàáâãäåæçèéêëìíîïðñòóôõöùúû
  */
 export class LookupEngine {
   private index: Map<string, VocabularyEntry>;
+  private phraseIndex: Map<string, VocabularyEntry[]>;
 
   /**
    * When false, all lookups return empty results and hasTranslation returns false.
@@ -28,8 +29,21 @@ export class LookupEngine {
 
   private constructor(vocabulary: VocabularyEntry[]) {
     this.index = new Map();
+    this.phraseIndex = new Map();
     for (const entry of vocabulary) {
-      this.index.set(entry.welsh.toLowerCase(), entry);
+      const key = entry.welsh.toLowerCase();
+      if (key.includes(' ')) {
+        const firstWord = key.split(' ')[0];
+        const existing = this.phraseIndex.get(firstWord) ?? [];
+        existing.push(entry);
+        this.phraseIndex.set(firstWord, existing);
+      } else {
+        this.index.set(key, entry);
+      }
+    }
+    // Sort phrase entries by word count descending for greedy (longest) matching.
+    for (const entries of this.phraseIndex.values()) {
+      entries.sort((a, b) => b.welsh.split(' ').length - a.welsh.split(' ').length);
     }
   }
 
@@ -53,9 +67,13 @@ export class LookupEngine {
     return new LookupEngine(vocabulary);
   }
 
-  /** The number of vocabulary entries in the index. */
+  /** The number of vocabulary entries in the index (single-word + phrase entries). */
   get size(): number {
-    return this.index.size;
+    let phraseCount = 0;
+    for (const entries of this.phraseIndex.values()) {
+      phraseCount += entries.length;
+    }
+    return this.index.size + phraseCount;
   }
 
   /**
@@ -108,5 +126,130 @@ export class LookupEngine {
 
     const { candidates } = getCandidates(clean);
     return candidates.some((c) => this.index.has(c));
+  }
+
+  /**
+   * Look up a multi-word phrase starting at the given token index.
+   *
+   * Walks forward through `tokens` from `startIndex`, applying mutation reversal
+   * independently per word, and checks against phrase entries in the vocabulary.
+   * Longest matching phrase wins (greedy).
+   *
+   * @param tokens - The full token array from `tokenise()`.
+   * @param startIndex - Index of the first token to consider.
+   * @returns A PhraseLookupResult with the matched entry, or null if no phrase found.
+   */
+  lookupPhrase(tokens: Token[], startIndex: number): PhraseLookupResult {
+    const empty: PhraseLookupResult = { entry: null, radicals: null, wordCount: 0, tokenSpan: 0, debugLines: [] };
+    if (!this.enabled) return empty;
+
+    const startToken = tokens[startIndex];
+    if (!startToken || startToken.type !== 'word') return empty;
+
+    const firstClean = startToken.word.replace(CLEAN_PATTERN, '').toLowerCase();
+    if (firstClean === '') return empty;
+
+    const { candidates: firstCandidates } = getCandidates(firstClean);
+    const debugLines: DebugLine[] = [];
+
+    for (const firstCandidate of firstCandidates) {
+      const phraseEntries = this.phraseIndex.get(firstCandidate);
+      if (!phraseEntries) continue;
+
+      for (const entry of phraseEntries) {
+        const expectedRadicals = entry.welsh.toLowerCase().split(' ');
+        const result = this.matchPhrase(tokens, startIndex, expectedRadicals);
+        if (result) {
+          const firstIsMutated = firstCandidate !== firstClean;
+          debugLines.push({
+            type: firstIsMutated ? 'mutated' : 'hit',
+            msg: `phrase "${entry.welsh}" matched from token ${startIndex} (span ${result.tokenSpan})`,
+          });
+          return {
+            entry,
+            radicals: result.radicals,
+            wordCount: expectedRadicals.length,
+            tokenSpan: result.tokenSpan,
+            debugLines,
+          };
+        }
+      }
+    }
+
+    debugLines.push({ type: 'miss', msg: `no phrase match starting at token ${startIndex}` });
+    return { ...empty, debugLines };
+  }
+
+  /**
+   * Lightweight check for whether a phrase starts at the given token index.
+   * Returns the token span if a phrase is found so the caller knows how many tokens to skip.
+   */
+  hasPhrase(tokens: Token[], startIndex: number): { match: boolean; tokenSpan: number } {
+    if (!this.enabled) return { match: false, tokenSpan: 0 };
+
+    const startToken = tokens[startIndex];
+    if (!startToken || startToken.type !== 'word') return { match: false, tokenSpan: 0 };
+
+    const firstClean = startToken.word.replace(CLEAN_PATTERN, '').toLowerCase();
+    if (firstClean === '') return { match: false, tokenSpan: 0 };
+
+    const { candidates: firstCandidates } = getCandidates(firstClean);
+
+    for (const firstCandidate of firstCandidates) {
+      const phraseEntries = this.phraseIndex.get(firstCandidate);
+      if (!phraseEntries) continue;
+
+      for (const entry of phraseEntries) {
+        const expectedRadicals = entry.welsh.toLowerCase().split(' ');
+        const result = this.matchPhrase(tokens, startIndex, expectedRadicals);
+        if (result) return { match: true, tokenSpan: result.tokenSpan };
+      }
+    }
+
+    return { match: false, tokenSpan: 0 };
+  }
+
+  /**
+   * Try to match a sequence of expected radical forms against tokens starting at startIndex.
+   * Returns radicals and tokenSpan on success, or null on failure.
+   */
+  private matchPhrase(
+    tokens: Token[],
+    startIndex: number,
+    expectedRadicals: string[],
+  ): { radicals: (string | null)[]; tokenSpan: number } | null {
+    const radicals: (string | null)[] = [];
+    let tokenPos = startIndex;
+    let wordIndex = 0;
+
+    while (wordIndex < expectedRadicals.length && tokenPos < tokens.length) {
+      const token = tokens[tokenPos];
+
+      if (token.type === 'whitespace') {
+        tokenPos++;
+        continue;
+      }
+
+      if (token.type === 'punctuation') return null;
+
+      // It's a word token.
+      const clean = token.word.replace(CLEAN_PATTERN, '').toLowerCase();
+      if (clean === '') return null;
+
+      const { candidates } = getCandidates(clean);
+      const expected = expectedRadicals[wordIndex];
+      const matchingCandidate = candidates.find((c) => c === expected);
+
+      if (!matchingCandidate) return null;
+
+      const isMutated = matchingCandidate !== clean;
+      radicals.push(isMutated ? matchingCandidate : null);
+      wordIndex++;
+      tokenPos++;
+    }
+
+    if (wordIndex < expectedRadicals.length) return null;
+
+    return { radicals, tokenSpan: tokenPos - startIndex };
   }
 }
