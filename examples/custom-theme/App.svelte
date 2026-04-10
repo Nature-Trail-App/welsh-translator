@@ -6,8 +6,9 @@
 
   const engine = LookupEngine.fromEntries(vocabulary);
   const poi = pois[0];
+  const forestPoi = pois[1];
 
-  const htmlSnippet = `<p>Mae'r <strong>nant</strong> yn llifo i lawr o'r <em>cwm</em>, heibio i'r <strong>coed</strong> trwchus, gan gario <em>dŵr</em> oer o'r bryniau.</p>`;
+  const htmlSnippet = `<p>${forestPoi.body}</p>`;
 </script>
 
 <main class="example-container">
@@ -41,11 +42,11 @@
       </div>
     </section>
 
-    <!-- Forest theme using TranslatableHTML -->
+    <!-- Forest theme using TranslatableHTML with Tree Trail POI -->
     <section class="theme-card forest-theme">
-      <h2 class="theme-title">Forest Theme (HTML)</h2>
+      <h2 class="theme-title">Forest Theme — {forestPoi.nameEnglish}</h2>
       <p class="theme-desc">
-        A green palette applied to <code>TranslatableHTML</code> with rich HTML content.
+        A green palette applied to <code>TranslatableHTML</code> using the {forestPoi.name} trail data.
       </p>
       <div class="theme-content">
         <TranslatableHTML html={htmlSnippet} {engine} />

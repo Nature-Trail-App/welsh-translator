@@ -11,8 +11,9 @@ const WELSH_LETTER = /[^a-zàáâãäåæçèéêëìíîïðñòóôõöùúû�
  * Welsh vowel pattern for detecting soft mutation g-deletion.
  * When soft mutation removes an initial `g` before a vowel, the word appears
  * to start with that vowel. We try prepending `g` to recover the radical.
+ * In Welsh, `w` and `y` also function as vowels (e.g. gwahanol → wahanol).
  */
-const WELSH_VOWEL_START = /^[aeiouàáâèéêìíîòóôùúû]/i;
+const WELSH_VOWEL_START = /^[aeiouwyàáâèéêìíîòóôùúûŵŷ]/i;
 
 /**
  * Generate candidate radical (dictionary) forms for a potentially mutated Welsh word.
