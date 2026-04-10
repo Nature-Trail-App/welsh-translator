@@ -103,6 +103,16 @@ describe('getCandidates', () => {
     expect(candidates).toContain('gôl');
   });
 
+  it('tries prepending g when word starts with w (Welsh semi-vowel)', () => {
+    const { candidates } = getCandidates('wahanol');
+    expect(candidates).toContain('gwahanol');
+  });
+
+  it('tries prepending g when word starts with y (Welsh semi-vowel)', () => {
+    const { candidates } = getCandidates('ylan');
+    expect(candidates).toContain('gylan');
+  });
+
   // ── Guards ──
 
   it('does not treat dd as soft d', () => {
@@ -153,12 +163,9 @@ describe('getCandidates', () => {
     expect(types).toContain('soft');
   });
 
-  it('returns empty log for words with no plausible mutations', () => {
-    // "ŵyn" starts with a Welsh character that isn't in the vowel set
-    // Actually "ŵ" isn't in the standard vowel regex, so no g-deletion
+  it('logs soft-g-deletion for words starting with Welsh semi-vowels', () => {
     const { mutationLog } = getCandidates('ŵyn');
-    // Only soft-g-deletion won't fire since ŵ isn't in the vowel start pattern
-    // But 'ŵ' after cleaning... let's check what actually happens
-    expect(mutationLog).toBeDefined();
+    const types = mutationLog.map((l) => l.type);
+    expect(types).toContain('soft-g-deletion');
   });
 });
