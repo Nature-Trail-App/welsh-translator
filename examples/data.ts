@@ -23,6 +23,8 @@ export const vocabulary: VocabularyEntry[] = [
   { id: "v20", welsh: "iaith", english: "language", site: "nant-gwrtheyrn" },
   { id: "v21", welsh: "taith cerdded", english: "a walk", site: "nant-gwrtheyrn" },
   { id: "v22", welsh: "rydych chi", english: "you are", site: "nant-gwrtheyrn" },
+  { id: "v23", welsh: "gwahanol", english: "different", site: "nant-gwrtheyrn" },
+  { id: "v24", welsh: "coeden", english: "tree", site: "nant-gwrtheyrn" },
 ];
 
 export const pois = [
@@ -33,5 +35,13 @@ export const pois = [
     type: "Heritage Site",
     site: "nant-gwrtheyrn",
     body: `Ar lan y môr, mae bwthyn bach yn sefyll uwchlaw'r traeth. Adeiladwyd y pentref hwn gan chwarelwyr y mynydd, ac mae'r llwybr arfordirol yn dilyn ymyl y graig. Gwelir carreg fawr wrth ymyl y capel, a elwir yn Faen y Gorffennol. Mae'r nant yn llifo i lawr o'r cwm, heibio i'r coed trwchus, gan gario dŵr oer o'r bryniau. Unwaith roedd gorsaf fechan yma, a hen dad y pentref a'i hadeiladodd. Dyma ganolfan yr iaith Gymraeg ar Benrhyn Llŷn. Rydych chi ar fin cychwyn ar daith gerdded sy'n dangos rhai o goed brodorol Prydain i chi.`,
+  },
+  {
+    id: "poi02",
+    name: "Llwybr y Coed",
+    nameEnglish: "The Tree Trail",
+    type: "Nature Trail",
+    site: "nant-gwrtheyrn",
+    body: `Mae wyth coeden wahanol i'w gweld ac mae'r llwybr yn dilyn llwybr da. Mae'r llwybr cyfan tua 1 km o hyd a bydd y daith gerdded yn cymryd hanner awr bob ffordd.`,
   },
 ];
