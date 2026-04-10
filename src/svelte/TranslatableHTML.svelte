@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Popover } from 'bits-ui';
-  import type { LookupResult } from '../core/types.js';
+  import type { LookupResult, WordToken } from '../core/types.js';
   import { tokenise } from '../core/tokeniser.js';
   import { LookupEngine } from '../core/lookup-engine.js';
   import './welsh-translator.css';
@@ -45,8 +45,23 @@
       return;
     }
 
-    const result = engine.lookup(word);
-    if (!result.entry) return;
+    // Check if this is a phrase button
+    const phraseKey = btn.dataset.phraseKey;
+    const phraseData = phraseKey ? phraseRegistry.get(phraseKey) : null;
+
+    let result: LookupResult;
+    if (phraseData) {
+      const phraseResult = engine.lookupPhrase(phraseData.tokens, phraseData.startIndex);
+      if (!phraseResult.entry) return;
+      result = {
+        entry: phraseResult.entry,
+        radical: phraseResult.radicals?.some((r) => r !== null) ? phraseResult.entry.welsh : null,
+        debugLines: phraseResult.debugLines,
+      };
+    } else {
+      result = engine.lookup(word);
+      if (!result.entry) return;
+    }
 
     // Remove active class from previous anchor
     anchorEl?.classList.remove('translatable-word--active');
@@ -58,6 +73,10 @@
 
     btn.classList.add('translatable-word--active');
   }
+
+  // Registry for phrase data, keyed by a unique ID per phrase button
+  let phraseRegistry = new Map<string, { tokens: ReturnType<typeof tokenise>; startIndex: number }>();
+  let phraseIdCounter = 0;
 
   function closePopover() {
     anchorEl?.classList.remove('translatable-word--active');
@@ -78,6 +97,9 @@
 
   function makeTranslatable(container: HTMLElement, _html: string) {
     function process() {
+      phraseRegistry.clear();
+      phraseIdCounter = 0;
+
       const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
       const textNodes: Text[] = [];
 
@@ -93,15 +115,65 @@
         if (!content.trim()) continue;
 
         const tokens = tokenise(content);
-        const hasAnyTranslatable = tokens.some(
+
+        // Quick check: skip text nodes with no translatable single words.
+        // Phrase detection happens in the main loop below — this is just
+        // a fast path to avoid DOM replacement for purely non-translatable nodes.
+        // A node that only contains phrase words (no single-word matches) will
+        // still be processed by the main loop's hasPhrase check.
+        const hasAnySingleWord = tokens.some(
           (t) => t.type === 'word' && engine.hasTranslation(t.word),
         );
-        if (!hasAnyTranslatable) continue;
+        const hasAnyPhrase = !hasAnySingleWord && tokens.some(
+          (t, idx) => t.type === 'word' && engine.hasPhrase(tokens, idx).match,
+        );
+        if (!hasAnySingleWord && !hasAnyPhrase) continue;
 
         const fragment = document.createDocumentFragment();
 
-        for (const token of tokens) {
+        let i = 0;
+        while (i < tokens.length) {
+          const token = tokens[i];
+
           if (token.type === 'word') {
+            // Check for phrase match first
+            const phrase = engine.hasPhrase(tokens, i);
+            if (phrase.match) {
+              const phraseTokens = tokens.slice(i, i + phrase.tokenSpan);
+              const firstWord = phraseTokens[0] as WordToken;
+              const lastWord = [...phraseTokens].reverse().find((t): t is WordToken => t.type === 'word')!;
+
+              if (firstWord.pre) {
+                fragment.appendChild(document.createTextNode(firstWord.pre));
+              }
+
+              const btn = document.createElement('button');
+              btn.className = 'translatable-word';
+              btn.type = 'button';
+              // Inner text: words and whitespace, no leading/trailing punctuation
+              btn.textContent = phraseTokens.map((t) => {
+                if (t.type === 'word') return t.word;
+                return t.raw;
+              }).join('');
+              btn.setAttribute('aria-label', `Translate: ${btn.textContent}`);
+
+              // Register phrase data for the click handler
+              const phraseKey = `phrase-${phraseIdCounter++}`;
+              btn.dataset.phraseKey = phraseKey;
+              phraseRegistry.set(phraseKey, { tokens, startIndex: i });
+
+              btn.addEventListener('click', handleWordClick);
+              fragment.appendChild(btn);
+
+              if (lastWord.post) {
+                fragment.appendChild(document.createTextNode(lastWord.post));
+              }
+
+              i += phrase.tokenSpan;
+              continue;
+            }
+
+            // Single word handling (unchanged)
             const hasTranslation = engine.hasTranslation(token.word);
 
             if (token.pre) {
@@ -129,6 +201,8 @@
           } else {
             fragment.appendChild(document.createTextNode(token.raw));
           }
+
+          i++;
         }
 
         textNode.parentNode?.replaceChild(fragment, textNode);

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import './welsh-translator.css';
+
   interface Props {
     /** The word as it appears in the text. */
     word: string;
@@ -45,33 +47,3 @@
   <span class="word">{word}</span>
 {/if}
 
-<style>
-  .translatable-word {
-    all: unset;
-    cursor: pointer;
-    border-bottom: 1px solid var(--wt-word-border-color, rgba(201, 168, 76, 0.45));
-    transition: var(--wt-word-transition, border-color 0.15s, background-color 0.15s);
-    border-radius: var(--wt-word-border-radius, 2px);
-    padding: var(--wt-word-padding, 0 1px);
-    line-height: inherit;
-    font: inherit;
-    color: inherit;
-  }
-
-  .translatable-word:hover,
-  .translatable-word:focus-visible {
-    background: var(--wt-word-hover-bg, rgba(201, 168, 76, 0.12));
-    border-bottom-color: var(--wt-word-hover-border-color, rgba(201, 168, 76, 1));
-    outline: var(--wt-word-focus-outline, 2px solid rgba(201, 168, 76, 0.4));
-    outline-offset: 1px;
-  }
-
-  .translatable-word--active {
-    background: var(--wt-word-active-bg, rgba(201, 168, 76, 0.18));
-    border-bottom-color: var(--wt-word-active-border-color, rgba(201, 168, 76, 1));
-  }
-
-  .word {
-    padding: var(--wt-word-padding, 0 1px);
-  }
-</style>
