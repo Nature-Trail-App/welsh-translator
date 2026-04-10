@@ -1,7 +1,7 @@
-/** A single vocabulary entry mapping a Welsh radical form to its English translation. */
+/** A vocabulary entry mapping a Welsh radical form to its English translation. */
 export interface VocabularyEntry {
   id: string;
-  /** The radical (root/dictionary) form of the Welsh word — never mutated. */
+  /** The radical (root/dictionary) form — never mutated. May contain spaces for multi-word phrases (e.g. "taith cerdded"). */
   welsh: string;
   /** English translation or gloss. */
   english: string;
@@ -49,6 +49,19 @@ export interface LookupResult {
   /** The recovered radical form, if the word was mutated. Null for direct matches. */
   radical: string | null;
   /** Trace of every candidate tried — useful for debugging. */
+  debugLines: DebugLine[];
+}
+
+export interface PhraseLookupResult {
+  /** The matched vocabulary entry, or null if no phrase match. */
+  entry: VocabularyEntry | null;
+  /** Recovered radical forms per word. Null entries = direct match for that word. */
+  radicals: (string | null)[] | null;
+  /** Number of word tokens consumed by this match. */
+  wordCount: number;
+  /** Number of total tokens consumed (including whitespace between words). */
+  tokenSpan: number;
+  /** Debug trace. */
   debugLines: DebugLine[];
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Popover } from 'bits-ui';
-  import type { LookupResult } from '../core/types.js';
+  import type { LookupResult, Token, WordToken } from '../core/types.js';
   import { tokenise } from '../core/tokeniser.js';
   import { LookupEngine } from '../core/lookup-engine.js';
   import TranslatableWord from './TranslatableWord.svelte';
@@ -28,18 +28,44 @@
     if (!isEnabled) closePopover();
   });
 
-  // Tokenise the text and pre-compute which words have translations
-  let processedTokens = $derived.by(() => {
-    const tokens = tokenise(text);
-    return tokens.map((token) => {
+  type ProcessedItem =
+    | { kind: 'phrase'; tokens: Token[]; startIndex: number; tokenSpan: number; pre: string; post: string }
+    | { kind: 'word'; token: WordToken; tokenIndex: number; hasTranslation: boolean }
+    | { kind: 'raw'; raw: string };
+
+  // Tokenise the text, detect phrases, and pre-compute which words have translations
+  let rawTokens: Token[] = $derived(tokenise(text));
+
+  let processedItems: ProcessedItem[] = $derived.by(() => {
+    const tokens = rawTokens;
+    const items: ProcessedItem[] = [];
+    let i = 0;
+    while (i < tokens.length) {
+      const token = tokens[i];
       if (token.type === 'word') {
-        return {
-          ...token,
-          hasTranslation: engine.hasTranslation(token.word),
-        };
+        const phrase = engine.hasPhrase(tokens, i);
+        if (phrase.match) {
+          const phraseTokens = tokens.slice(i, i + phrase.tokenSpan);
+          const firstWord = phraseTokens[0] as WordToken;
+          const lastWord = [...phraseTokens].reverse().find((t): t is WordToken => t.type === 'word')!;
+          items.push({
+            kind: 'phrase',
+            tokens: phraseTokens,
+            startIndex: i,
+            tokenSpan: phrase.tokenSpan,
+            pre: firstWord.pre,
+            post: lastWord.post,
+          });
+          i += phrase.tokenSpan;
+          continue;
+        }
+        items.push({ kind: 'word', token, tokenIndex: i, hasTranslation: engine.hasTranslation(token.word) });
+      } else {
+        items.push({ kind: 'raw', raw: token.raw });
       }
-      return { ...token, hasTranslation: false };
-    });
+      i++;
+    }
+    return items;
   });
 
   // Shared popover state
@@ -47,9 +73,9 @@
   let activeWord = $state<string | null>(null);
   let lookupResult = $state<LookupResult | null>(null);
   let anchorEl = $state<HTMLElement | null>(null);
-  let activeTokenIndex = $state<number | null>(null);
+  let activeItemIndex = $state<number | null>(null);
 
-  function handleWordClick(_event: MouseEvent, buttonEl: HTMLButtonElement, tokenIndex: number) {
+  function handleWordClick(_event: MouseEvent, buttonEl: HTMLButtonElement, itemIndex: number) {
     const word = buttonEl.textContent ?? '';
 
     // Toggle off if tapping the same word
@@ -64,7 +90,39 @@
     activeWord = word;
     lookupResult = result;
     anchorEl = buttonEl;
-    activeTokenIndex = tokenIndex;
+    activeItemIndex = itemIndex;
+    popoverOpen = true;
+  }
+
+  function handlePhraseClick(event: MouseEvent, itemIndex: number) {
+    const btn = event.currentTarget as HTMLButtonElement;
+
+    // Toggle off if tapping the same phrase
+    if (popoverOpen && anchorEl === btn) {
+      closePopover();
+      return;
+    }
+
+    const item = processedItems[itemIndex];
+    if (item.kind !== 'phrase') return;
+
+    const phraseResult = engine.lookupPhrase(rawTokens, item.startIndex);
+    if (!phraseResult.entry) return;
+
+    // Build a display word from the phrase tokens (words joined by spaces)
+    const phraseText = item.tokens
+      .filter((t): t is WordToken => t.type === 'word')
+      .map((t) => t.word)
+      .join(' ');
+
+    activeWord = phraseText;
+    lookupResult = {
+      entry: phraseResult.entry,
+      radical: phraseResult.radicals?.some((r) => r !== null) ? phraseResult.entry.welsh : null,
+      debugLines: phraseResult.debugLines,
+    };
+    anchorEl = btn;
+    activeItemIndex = itemIndex;
     popoverOpen = true;
   }
 
@@ -73,24 +131,45 @@
     activeWord = null;
     lookupResult = null;
     anchorEl = null;
-    activeTokenIndex = null;
+    activeItemIndex = null;
+  }
+
+  /** Extract the display text for words inside a phrase button (no leading/trailing punctuation). */
+  function phraseInnerText(tokens: Token[]): string {
+    return tokens.map((t) => {
+      if (t.type === 'word') return t.word;
+      return t.raw;
+    }).join('');
   }
 </script>
 
 {#if isEnabled}
   <span class="translatable-text {className}" lang="cy">
-    {#each processedTokens as token, i (i)}
-      {#if token.type === 'word'}
-        {#if token.pre}{token.pre}{/if}
+    {#each processedItems as item, i (i)}
+      {#if item.kind === 'phrase'}
+        {#if item.pre}{item.pre}{/if}
+        <button
+          type="button"
+          class="translatable-word"
+          class:translatable-word--active={popoverOpen && activeItemIndex === i}
+          aria-label="Translate: {phraseInnerText(item.tokens)}"
+          aria-expanded={popoverOpen && activeItemIndex === i}
+          onclick={(event) => handlePhraseClick(event, i)}
+        >
+          {phraseInnerText(item.tokens)}
+        </button>
+        {#if item.post}{item.post}{/if}
+      {:else if item.kind === 'word'}
+        {#if item.token.pre}{item.token.pre}{/if}
         <TranslatableWord
-          word={token.word}
-          hasTranslation={token.hasTranslation}
-          active={popoverOpen && activeWord === token.word && activeTokenIndex === i}
+          word={item.token.word}
+          hasTranslation={item.hasTranslation}
+          active={popoverOpen && activeItemIndex === i}
           onclick={(event, el) => handleWordClick(event, el, i)}
         />
-        {#if token.post}{token.post}{/if}
+        {#if item.token.post}{item.token.post}{/if}
       {:else}
-        {token.raw}
+        {item.raw}
       {/if}
     {/each}
   </span>

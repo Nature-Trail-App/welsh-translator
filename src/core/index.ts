@@ -7,6 +7,7 @@ export type {
   DebugLineType,
   DebugLine,
   LookupResult,
+  PhraseLookupResult,
   TokenType,
   Token,
   WordToken,

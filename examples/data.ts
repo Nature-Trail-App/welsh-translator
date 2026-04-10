@@ -21,6 +21,8 @@ export const vocabulary: VocabularyEntry[] = [
   { id: "v18", welsh: "pentref", english: "village", site: "nant-gwrtheyrn" },
   { id: "v19", welsh: "porthladd", english: "harbour / port", site: "nant-gwrtheyrn" },
   { id: "v20", welsh: "iaith", english: "language", site: "nant-gwrtheyrn" },
+  { id: "v21", welsh: "taith cerdded", english: "a walk", site: "nant-gwrtheyrn" },
+  { id: "v22", welsh: "rydych chi", english: "you are", site: "nant-gwrtheyrn" },
 ];
 
 export const pois = [
@@ -30,6 +32,6 @@ export const pois = [
     nameEnglish: "Harbour of the Language",
     type: "Heritage Site",
     site: "nant-gwrtheyrn",
-    body: `Ar lan y môr, mae bwthyn bach yn sefyll uwchlaw'r traeth. Adeiladwyd y pentref hwn gan chwarelwyr y mynydd, ac mae'r llwybr arfordirol yn dilyn ymyl y graig. Gwelir carreg fawr wrth ymyl y capel, a elwir yn Faen y Gorffennol. Mae'r nant yn llifo i lawr o'r cwm, heibio i'r coed trwchus, gan gario dŵr oer o'r bryniau. Unwaith roedd gorsaf fechan yma, a hen dad y pentref a'i hadeiladodd. Dyma ganolfan yr iaith Gymraeg ar Benrhyn Llŷn.`,
+    body: `Ar lan y môr, mae bwthyn bach yn sefyll uwchlaw'r traeth. Adeiladwyd y pentref hwn gan chwarelwyr y mynydd, ac mae'r llwybr arfordirol yn dilyn ymyl y graig. Gwelir carreg fawr wrth ymyl y capel, a elwir yn Faen y Gorffennol. Mae'r nant yn llifo i lawr o'r cwm, heibio i'r coed trwchus, gan gario dŵr oer o'r bryniau. Unwaith roedd gorsaf fechan yma, a hen dad y pentref a'i hadeiladodd. Dyma ganolfan yr iaith Gymraeg ar Benrhyn Llŷn. Rydych chi ar fin cychwyn ar daith gerdded sy'n dangos rhai o goed brodorol Prydain i chi.`,
   },
 ];

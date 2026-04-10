@@ -25,10 +25,12 @@ This is a Welsh word translation library with two export paths:
 
 The lookup pipeline: **tokenise → getCandidates → LookupEngine.lookup**
 
-- **LookupEngine** — builds an in-memory `Map<lowercase-welsh, VocabularyEntry>` for O(1) lookups. `lookup(word)` tries the word as-is first, then tries mutation-reversed candidates via `getCandidates()`. All lookups are synchronous after initial load.
-- **mutations (`getCandidates`)** — reverses Welsh initial consonant mutations (soft, nasal, aspirate, soft-g-deletion) to recover the radical (dictionary) form. Returns candidates in priority order: as-is → aspirate → nasal → soft.
+- **LookupEngine** — two in-memory indexes: a `Map<lowercase-welsh, VocabularyEntry>` for O(1) single-word lookups, and a `phraseIndex` (keyed by first word) for multi-word phrase lookups. `lookup(word)` handles single words; `lookupPhrase(tokens, startIndex)` walks forward through tokens to match multi-word vocabulary entries. `hasTranslation(word)` and `hasPhrase(tokens, startIndex)` are lightweight boolean checks. All lookups are synchronous after initial load.
+- **mutations (`getCandidates`)** — reverses Welsh initial consonant mutations (soft, nasal, aspirate, soft-g-deletion) to recover the radical (dictionary) form. Returns candidates in priority order: as-is → aspirate → nasal → soft. For phrases, mutation reversal is applied independently per word.
 - **tokeniser** — splits Welsh prose on whitespace boundaries into `Token[]` (word/whitespace/punctuation). Word tokens extract `pre` punctuation, the `word` itself, and `post` punctuation. Concatenating all `token.raw` values reproduces the original text exactly.
 - **adapters** — `VocabularyProvider` interface for async vocabulary loading. `StaticVocabularyProvider` is the reference implementation.
+
+`VocabularyEntry.welsh` can contain space-separated radicals for multi-word phrases (e.g. `"taith cerdded"`). These are automatically routed to the phrase index during engine construction.
 
 ### Svelte Components (`src/svelte/`)
 
@@ -47,4 +49,4 @@ The lookup pipeline: **tokenise → getCandidates → LookupEngine.lookup**
 
 ## Testing
 
-Tests are in `tests/` using Vitest with globals enabled (no need to import `describe`/`it`/`expect`). Three test files cover mutations, tokeniser, and lookup-engine (62 tests total). There are no component tests currently.
+Tests are in `tests/` using Vitest with globals enabled (no need to import `describe`/`it`/`expect`). Four test files cover mutations, tokeniser, lookup-engine, and demo data (80 tests total). There are no component tests currently.
