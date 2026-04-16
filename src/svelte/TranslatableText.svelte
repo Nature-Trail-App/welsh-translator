@@ -1,8 +1,13 @@
+<script module lang="ts">
+  let instanceCounter = 0;
+</script>
+
 <script lang="ts">
   import { Popover } from 'bits-ui';
   import type { LookupResult, Token, WordToken } from '../core/types.js';
   import { tokenise } from '../core/tokeniser.js';
   import { LookupEngine } from '../core/lookup-engine.js';
+  import { createPopoverController, type PopoverController } from './popover-controller.svelte.js';
   import TranslatableWord from './TranslatableWord.svelte';
   import './welsh-translator.css';
 
@@ -18,14 +23,37 @@
     enabled?: boolean;
     /** Optional CSS class for the container. */
     class?: string;
+    /**
+     * Optional shared popover controller. When provided, only one popover
+     * can be open at a time across all components sharing the same controller.
+     * When omitted, the component creates its own internal controller.
+     */
+    controller?: PopoverController;
   }
 
-  let { text, engine, enabled: enabledProp = undefined, class: className = '' }: Props = $props();
+  let {
+    text,
+    engine,
+    enabled: enabledProp = undefined,
+    class: className = '',
+    controller: externalController = undefined,
+  }: Props = $props();
+
   let isEnabled = $derived(enabledProp ?? engine.enabled);
+
+  // Popover controller — shared or standalone
+  const internalController = createPopoverController();
+  let ctrl = $derived(externalController ?? internalController);
+
+  // Unique instance ID for generating word IDs
+  const instanceId = instanceCounter++;
+  function wordId(itemIndex: number): string {
+    return `tt-${instanceId}-${itemIndex}`;
+  }
 
   // Close any open popover when translation is disabled
   $effect(() => {
-    if (!isEnabled) closePopover();
+    if (!isEnabled) ctrl.close();
   });
 
   type ProcessedItem =
@@ -68,19 +96,30 @@
     return items;
   });
 
-  // Shared popover state
-  let popoverOpen = $state(false);
+  // Local popover content state (controller drives open/close, these drive content)
   let activeWord = $state<string | null>(null);
   let lookupResult = $state<LookupResult | null>(null);
   let anchorEl = $state<HTMLElement | null>(null);
   let activeItemIndex = $state<number | null>(null);
+  let activeWordId = $state<string | null>(null);
+
+  // Derived open state from controller
+  let popoverOpen = $derived(activeWordId !== null && ctrl.openId === activeWordId);
+
+  // Clean up local state when controller closes from outside (e.g. another component took over)
+  $effect(() => {
+    if (activeWordId !== null && ctrl.openId !== activeWordId) {
+      resetLocalState();
+    }
+  });
 
   function handleWordClick(_event: MouseEvent, buttonEl: HTMLButtonElement, itemIndex: number) {
+    const id = wordId(itemIndex);
     const word = buttonEl.textContent ?? '';
 
     // Toggle off if tapping the same word
-    if (popoverOpen && anchorEl === buttonEl) {
-      closePopover();
+    if (ctrl.openId === id) {
+      ctrl.close();
       return;
     }
 
@@ -91,15 +130,17 @@
     lookupResult = result;
     anchorEl = buttonEl;
     activeItemIndex = itemIndex;
-    popoverOpen = true;
+    activeWordId = id;
+    ctrl.set(id);
   }
 
   function handlePhraseClick(event: MouseEvent, itemIndex: number) {
     const btn = event.currentTarget as HTMLButtonElement;
+    const id = wordId(itemIndex);
 
     // Toggle off if tapping the same phrase
-    if (popoverOpen && anchorEl === btn) {
-      closePopover();
+    if (ctrl.openId === id) {
+      ctrl.close();
       return;
     }
 
@@ -123,15 +164,17 @@
     };
     anchorEl = btn;
     activeItemIndex = itemIndex;
-    popoverOpen = true;
+    activeWordId = id;
+    ctrl.set(id);
   }
 
-  function closePopover() {
-    popoverOpen = false;
+  /** Reset local content state without touching the controller. */
+  function resetLocalState() {
     activeWord = null;
     lookupResult = null;
     anchorEl = null;
     activeItemIndex = null;
+    activeWordId = null;
   }
 
   /** Extract the display text for words inside a phrase button (no leading/trailing punctuation). */
@@ -175,7 +218,7 @@
   </span>
 
   <!-- Single shared popover, anchored to whichever word was tapped -->
-  <Popover.Root bind:open={popoverOpen} onOpenChange={(o) => { if (!o) closePopover(); }}>
+  <Popover.Root open={popoverOpen} onOpenChange={(o) => { if (!o && popoverOpen) ctrl.close(); }}>
     {#if anchorEl}
       <Popover.Content
         class="translation-popover"
@@ -185,8 +228,15 @@
         trapFocus={false}
         preventScroll={false}
         customAnchor={anchorEl}
-        onEscapeKeydown={() => closePopover()}
-        onInteractOutside={() => closePopover()}
+        onEscapeKeydown={() => ctrl.close()}
+        onInteractOutside={(e) => {
+          const target = e.target;
+          if (target instanceof HTMLElement && target.closest('.translatable-word')) {
+            e.preventDefault();
+            return;
+          }
+          ctrl.close();
+        }}
       >
         {#if lookupResult?.entry}
           <div role="status" aria-live="polite">
