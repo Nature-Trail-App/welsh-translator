@@ -1,8 +1,13 @@
+<script module lang="ts">
+  let instanceCounter = 0;
+</script>
+
 <script lang="ts">
   import { Popover } from 'bits-ui';
   import type { LookupResult, WordToken } from '../core/types.js';
   import { tokenise } from '../core/tokeniser.js';
   import { LookupEngine } from '../core/lookup-engine.js';
+  import { createPopoverController, type PopoverController } from './popover-controller.svelte.js';
   import './welsh-translator.css';
 
   interface Props {
@@ -17,31 +22,65 @@
     enabled?: boolean;
     /** Optional CSS class for the container. */
     class?: string;
+    /**
+     * Optional shared popover controller. When provided, only one popover
+     * can be open at a time across all components sharing the same controller.
+     * When omitted, the component creates its own internal controller.
+     */
+    controller?: PopoverController;
   }
 
-  let { html, engine, enabled: enabledProp = undefined, class: className = '' }: Props = $props();
+  let {
+    html,
+    engine,
+    enabled: enabledProp = undefined,
+    class: className = '',
+    controller: externalController = undefined,
+  }: Props = $props();
+
   let isEnabled = $derived(enabledProp ?? engine.enabled);
+
+  // Popover controller — shared or standalone
+  const internalController = createPopoverController();
+  let ctrl = $derived(externalController ?? internalController);
+
+  // Unique instance ID for generating word IDs
+  const instanceId = instanceCounter++;
+  function wordId(buttonIndex: number): string {
+    return `th-${instanceId}-${buttonIndex}`;
+  }
 
   // Close any open popover when translation is disabled
   $effect(() => {
-    if (!isEnabled) closePopover();
+    if (!isEnabled) ctrl.close();
   });
 
-  // Shared popover state
-  let popoverOpen = $state(false);
+  // Local popover content state
   let activeWord = $state<string | null>(null);
   let lookupResult = $state<LookupResult | null>(null);
   let anchorEl = $state<HTMLElement | null>(null);
+  let activeWordId = $state<string | null>(null);
+
+  // Derived open state from controller
+  let popoverOpen = $derived(activeWordId !== null && ctrl.openId === activeWordId);
+
+  // Clean up local state when controller closes from outside
+  $effect(() => {
+    if (activeWordId !== null && ctrl.openId !== activeWordId) {
+      resetLocalState();
+    }
+  });
 
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE']);
 
   function handleWordClick(event: MouseEvent) {
     const btn = event.currentTarget as HTMLButtonElement;
+    const id = btn.dataset.wtId!;
     const word = btn.textContent ?? '';
 
     // Toggle off if tapping the same word
-    if (popoverOpen && anchorEl === btn) {
-      closePopover();
+    if (ctrl.openId === id) {
+      ctrl.close();
       return;
     }
 
@@ -69,7 +108,8 @@
     activeWord = word;
     lookupResult = result;
     anchorEl = btn;
-    popoverOpen = true;
+    activeWordId = id;
+    ctrl.set(id);
 
     btn.classList.add('translatable-word--active');
   }
@@ -78,12 +118,13 @@
   let phraseRegistry = new Map<string, { tokens: ReturnType<typeof tokenise>; startIndex: number }>();
   let phraseIdCounter = 0;
 
-  function closePopover() {
+  /** Reset local content state without touching the controller. */
+  function resetLocalState() {
     anchorEl?.classList.remove('translatable-word--active');
-    popoverOpen = false;
     activeWord = null;
     lookupResult = null;
     anchorEl = null;
+    activeWordId = null;
   }
 
   function isInSkippedElement(node: Node): boolean {
@@ -99,6 +140,7 @@
     function process() {
       phraseRegistry.clear();
       phraseIdCounter = 0;
+      let buttonIndex = 0;
 
       const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
       const textNodes: Text[] = [];
@@ -162,6 +204,9 @@
               btn.dataset.phraseKey = phraseKey;
               phraseRegistry.set(phraseKey, { tokens, startIndex: i });
 
+              // Stamp unique ID for controller coordination
+              btn.dataset.wtId = wordId(buttonIndex++);
+
               btn.addEventListener('click', handleWordClick);
               fragment.appendChild(btn);
 
@@ -173,7 +218,7 @@
               continue;
             }
 
-            // Single word handling (unchanged)
+            // Single word handling
             const hasTranslation = engine.hasTranslation(token.word);
 
             if (token.pre) {
@@ -186,6 +231,7 @@
               btn.type = 'button';
               btn.textContent = token.word;
               btn.setAttribute('aria-label', `Translate: ${token.word}`);
+              btn.dataset.wtId = wordId(buttonIndex++);
               btn.addEventListener('click', handleWordClick);
               fragment.appendChild(btn);
             } else {
@@ -214,11 +260,13 @@
     return {
       update() {
         // {@html} has already replaced the DOM content, just reprocess
-        closePopover();
+        resetLocalState();
+        ctrl.close();
         process();
       },
       destroy() {
-        closePopover();
+        resetLocalState();
+        ctrl.close();
       },
     };
   }
@@ -234,7 +282,7 @@
   </span>
 
   <!-- Single shared popover, anchored to whichever word was tapped -->
-  <Popover.Root bind:open={popoverOpen} onOpenChange={(o) => { if (!o) closePopover(); }}>
+  <Popover.Root open={popoverOpen} onOpenChange={(o) => { if (!o && popoverOpen) ctrl.close(); }}>
     {#if anchorEl}
       <Popover.Content
         class="translation-popover"
@@ -244,8 +292,15 @@
         trapFocus={false}
         preventScroll={false}
         customAnchor={anchorEl}
-        onEscapeKeydown={() => closePopover()}
-        onInteractOutside={() => closePopover()}
+        onEscapeKeydown={() => ctrl.close()}
+        onInteractOutside={(e) => {
+          const target = e.target;
+          if (target instanceof HTMLElement && target.closest('.translatable-word')) {
+            e.preventDefault();
+            return;
+          }
+          ctrl.close();
+        }}
       >
         {#if lookupResult?.entry}
           <div role="status" aria-live="polite">
